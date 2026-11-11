@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { saveFavoriteMovie, type OnboardingState } from "./actions";
-import { MOVIE_TITLE_MAX } from "@/lib/validation";
+import { MOVIE_TITLE_MAX } from "@/lib/movie-title";
 
 export function OnboardingForm() {
   const [state, formAction, pending] = useActionState<OnboardingState, FormData>(

@@ -1,7 +1,5 @@
 import { z } from "zod";
-
-export const MOVIE_TITLE_MIN = 1;
-export const MOVIE_TITLE_MAX = 100;
+import { MOVIE_TITLE_MAX, MOVIE_TITLE_MIN } from "./movie-title";
 
 // Shared by the server action (authoritative) and the form (UX hints only).
 // Min length is 1 because real titles can be a single character ("M", "9").
