@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "FactGenerationLock" ALTER COLUMN "expiresAt" SET DATA TYPE TIMESTAMPTZ(3);
+
+-- AlterTable
+ALTER TABLE "MovieFact" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMPTZ(3);

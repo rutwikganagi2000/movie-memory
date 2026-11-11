@@ -45,7 +45,9 @@ model MovieFact {
   // served for the new movie, and history stays accurate.
   movie     String
   content   String   @db.Text
-  createdAt DateTime @default(now())
+  // timestamptz: the 60s cache window compares instants, so store an
+  // unambiguous point in time regardless of the writer's session time zone.
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -59,7 +61,7 @@ model MovieFact {
 model FactGenerationLock {
   userId    String   @id
   token     String
-  expiresAt DateTime
+  expiresAt DateTime @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
