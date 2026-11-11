@@ -1,0 +1,17 @@
+# Optional: a local Postgres if you don't have one installed.
+#   docker compose up -d
+# Then use: DATABASE_URL="postgresql://postgres:postgres@localhost:5433/movie_memory?schema=public"
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: movie_memory
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
