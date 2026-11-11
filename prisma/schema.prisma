@@ -1,0 +1,106 @@
+// Movie Memory — data model
+//
+// User / Account / Session / VerificationToken are the standard NextAuth
+// (Prisma adapter) tables. Our own data is:
+//   - User.favoriteMovie   : the single favorite movie captured at onboarding
+//   - MovieFact            : append-only history of generated facts
+//   - FactGenerationLock   : short-lived lease that serializes fact generation per user
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  // Null until onboarding is completed. "Has the user onboarded?" is
+  // derived from this column rather than stored as a separate flag, so the
+  // two can never disagree.
+  favoriteMovie String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  facts    MovieFact[]
+  factLock FactGenerationLock?
+}
+
+model MovieFact {
+  id        String   @id @default(cuid())
+  userId    String
+  // Snapshot of the movie title the fact was generated for. Keeping it on the
+  // row (instead of only joining to User.favoriteMovie) means the cache key is
+  // (userId, movie): if the favorite movie ever changes, old facts are never
+  // served for the new movie, and history stays accurate.
+  movie     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Serves the hot query: "latest fact for this user + movie".
+  @@index([userId, movie, createdAt(sort: Desc)])
+}
+
+// One row per user, at most. A request may generate a fact only while it
+// holds an unexpired lease (matching token). The lease expires on its own so
+// a crashed request can never block generation permanently.
+model FactGenerationLock {
+  userId    String   @id
+  token     String
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---- NextAuth adapter models (standard shape) ----
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
