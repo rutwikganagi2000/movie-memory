@@ -242,9 +242,15 @@ RETURNING "token";
 
 ## Why Variant A
 
-- The core of this product is a small, expensive, failure-prone side effect: an OpenAI call. Getting caching, concurrency, and failure handling *right* there is where correctness matters most, and it's the part with real, testable invariants: "one generation per burst", "never another user's data", "fresh means < 60s".
-- Backend logic like this can be proven with fast, deterministic tests, including a real-Postgres concurrency test. That's stronger evidence of correctness than UI tests.
-- It plays to the evaluation criteria I think matter most here: data modeling, authorization, and error handling.
+When I first sketched the app, the part that worried me most was the OpenAI call. It's the only piece that's slow, costs money, and can fail, and it runs on something as casual as refreshing a page. I wanted that part to be reliable, so I chose to put my time there rather than into polishing the UI.
+
+A few reasons in particular:
+
+- **This is where the subtle bugs are.** Two tabs open at once, or a quick double refresh: it's easy to write code that looks fine and still fires off three OpenAI calls at the same time. I wanted to think those cases through properly and then prove them with tests, including one that runs against a real Postgres database instead of a mock.
+- **I like problems with a clear right answer.** "Fresh means under 60 seconds." "One user never sees another user's data." "A burst of requests produces one fact, not five." Each of those can be pinned down in a test, and that's the kind of backend work I enjoy most.
+- **The tradeoffs are worth discussing.** A database lease or an in-memory lock? Should a request wait when another one is already generating, or show the previous fact? Those are decisions I can explain and defend, which felt like the point of the exercise.
+
+Variant B is a good problem too, but much of its value is in how the UI feels in the hand. I thought a test showing 20 concurrent requests producing exactly one winner would say more about my engineering in a short take-home.
 
 ## Key tradeoffs
 
